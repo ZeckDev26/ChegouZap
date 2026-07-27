@@ -7,8 +7,10 @@ const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
 
-// Instala o Service Worker e faz o cache dos arquivos essenciais
+// Instala o Service Worker e faz o cache
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // 🔥 MATA O SW ANTIGO E FORÇA A ATUALIZAÇÃO IMEDIATA
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -16,7 +18,12 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Intercepta as requisições para servir do cache caso esteja offline
+// 🔥 NOVO: Faz o SW assumir o controle de todas as abas/apps abertos instantaneamente
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
+// Intercepta as requisições (Cache First)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
@@ -24,16 +31,27 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 // Ouve o evento 'push' vindo do servidor
 self.addEventListener('push', (event) => {
-    const data = event.data ? event.data.json() : {};
-    const title = data.title || 'Nova mensagem no ChegouZap';
+    let data = {};
+    
+    // 🔥 Proteção contra quebra de JSON
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data = { body: event.data.text() }; // Se não for JSON, pega como texto puro
+        }
+    }
+    
+    const title = data.title || 'ChegouZap';
     
     const options = {
         body: data.body || 'Você tem uma nova mensagem.',
         icon: '/icon-192.svg',
-        badge: '/icon-192.svg', // Ícone pequeno para a barra de status do Android
-        vibrate: [200, 100, 200], // Vibração personalizada
+        badge: '/icon-192.svg', // Ícone pequeno para a barra de status
+        vibrate: [200, 100, 200], // Vibração
         data: {
             url: data.url || '/' // Onde abrir quando clicar
         }
@@ -45,9 +63,8 @@ self.addEventListener('push', (event) => {
 
 // Ouve o clique na notificação
 self.addEventListener('notificationclick', (event) => {
-    event.notification.close(); // Fecha a notificação visualmente
+    event.notification.close();
 
-    // Tenta focar na aba do app se já estiver aberta, ou abre uma nova
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let i = 0; i < windowClients.length; i++) {
