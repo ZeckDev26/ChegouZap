@@ -87,6 +87,7 @@ const userSchema = new mongoose.Schema({
     senhaHash: { type: String, required: true, select: false },
     avatar: { type: String, default: '' },
     avatarKey: { type: String, default: '' },
+    pushSubscription: { type: Object, default: null }
 }, { timestamps: true });
 
 const messageSchema = new mongoose.Schema({
@@ -108,10 +109,31 @@ const messageSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Message = mongoose.model('Message', messageSchema);
 
+const webpush = require('web-push');
+
+webpush.setVapidDetails(
+    process.env.VAPID_EMAIL,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
 function createToken(user) {
     return jwt.sign({ sub: user._id.toString() }, JWT_SECRET, { expiresIn: TOKEN_DURATION });
 }
-
+// Rota para salvar a inscrição de Push Notification
+app.post('/api/notifications/subscribe', async (req, res) => {
+    try {
+        // O frontend vai enviar a assinatura do navegador e o ID do usuário
+        const { subscription, userId } = req.body;
+        
+        // Atualiza o usuário no banco com a assinatura recebida
+        await User.findByIdAndUpdate(userId, { pushSubscription: subscription });
+        
+        res.status(200).json({ message: 'Inscrição salva com sucesso!' });
+    } catch (error) {
+        console.error('Erro no push:', error);
+        res.status(500).json({ erro: 'Erro ao salvar inscrição de notificação.' });
+    }
+});
 function inferR2Key(value = '') {
     if (!value) return '';
     const decoded = decodeURIComponent(String(value));

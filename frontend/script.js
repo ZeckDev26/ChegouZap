@@ -394,6 +394,7 @@ elements.authForm.addEventListener('submit', async (event) => {
     try {
         setLoading(elements.authSubmit, true, state.mode === 'register' ? 'Criando…' : 'Entrando…');
         saveSession(await api(endpoint, { method: 'POST', body: JSON.stringify(body) }));
+        subscribeUserToPush();
         elements.authForm.reset();
         await showChat();
     } catch (error) {
@@ -971,9 +972,70 @@ async function initialize() {
     try {
         const payload = await api('/api/auth/me');
         state.user = payload.usuario;
+        subscribeUserToPush();
         await showChat();
     } catch (_error) {
         logout(false);
+    }
+}
+// =======================================================
+// --- SISTEMA DE ASSINATURA PARA PUSH NOTIFICATION ---
+// =======================================================
+
+// Converter a chave pública VAPID (do .env) de Base64 para UInt8Array (exigência do navegador)
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// Função principal que gera a assinatura e manda pro backend
+async function subscribeUserToPush() {
+    // 1. Verifica se o navegador suporta notificações e service worker
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.warn('Push notifications não são suportadas neste navegador.');
+        return;
+    }
+
+    try {
+        // 2. Aguarda o Service Worker estar pronto
+        const registration = await navigator.serviceWorker.ready;
+
+        // 3. Verifica se o usuário já está inscrito
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+            console.log('Usuário já está inscrito para Push.');
+            return; // Já está inscrito, não faz nada
+        }
+
+        const VAPID_PUBLIC_KEY = 'BMFKvUpP3kWfPYcgCx7LT49VBjHQpMoHaQC-Tw8gBqZAlAZvotO1sEl6FJPepOudl3_42R1X8ZgGV0k9gfKBhr4';
+        const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true, // Obrigatório: a notificação sempre mostrará algo pro usuário
+            applicationServerKey: convertedVapidKey
+        });
+
+        console.log('Nova assinatura de Push gerada:', subscription);
+
+        // 5. Envia a assinatura e o ID do usuário logado para o backend
+        await api('/api/notifications/subscribe', {
+            method: 'POST',
+            body: JSON.stringify({
+                subscription: subscription,
+                userId: state.user.id // Pega o ID do usuário que acabou de logar
+            })
+        });
+
+        console.log('Assinatura enviada para o backend com sucesso!');
+
+    } catch (error) {
+        console.error('Falha ao inscrever o usuário para Push Notifications:', error);
     }
 }
 
