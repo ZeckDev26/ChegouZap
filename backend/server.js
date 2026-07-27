@@ -71,6 +71,7 @@ const upload = multer({
     fileFilter: (_req, file, callback) => {
         const permitido = file.mimetype.startsWith('image/')
             || file.mimetype.startsWith('video/')
+            || file.mimetype.startsWith('audio/')
             || allowedDocumentTypes.has(file.mimetype);
         callback(permitido ? null : new Error('Tipo de arquivo não permitido.'), permitido);
     },
@@ -216,6 +217,7 @@ function safeFileName(fileName = 'arquivo') {
 function attachmentCategory(mimeType) {
     if (mimeType.startsWith('image/')) return 'imagem';
     if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
     return 'documento';
 }
 
