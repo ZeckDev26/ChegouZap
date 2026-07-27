@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#075e54">
+    <meta name="description" content="ChegouZap — conversas rápidas, simples e seguras.">
+    <title>ChegouZap</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="app-shell">
+        <section class="auth-screen" id="authScreen" aria-labelledby="authTitle">
+            <div class="auth-brand">
+                <div class="brand-mark" aria-hidden="true">C</div>
+                <div>
+                    <p class="eyebrow">Converse sem complicação</p>
+                    <h1>ChegouZap</h1>
+                    <p>Mensagens em tempo real e arquivos seguros, com o melhor do WhatsApp e Telegram.</p>
+                </div>
+            </div>
+
+            <div class="auth-card">
+                <div class="auth-card-heading">
+                    <span class="mini-mark" aria-hidden="true">C</span>
+                    <div>
+                        <h2 id="authTitle">Que bom ter você aqui</h2>
+                        <p id="authSubtitle">Entre para continuar suas conversas.</p>
+                    </div>
+                </div>
+
+                <form id="authForm" novalidate>
+                    <div class="form-field is-hidden" id="nameField">
+                        <label for="nameInput">Seu nome</label>
+                        <input id="nameInput" name="nome" autocomplete="name" placeholder="Como quer ser chamado?">
+                    </div>
+                    <div class="form-field">
+                        <label for="emailInput">E-mail</label>
+                        <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="passwordInput">Senha</label>
+                        <div class="password-wrap">
+                            <input id="passwordInput" name="senha" type="password" minlength="6" autocomplete="current-password" placeholder="Sua senha" required>
+                            <button class="password-toggle" id="passwordToggle" type="button" aria-label="Mostrar senha">Ver</button>
+                        </div>
+                    </div>
+                    <p class="form-error" id="authError" role="alert"></p>
+                    <button class="primary-button" id="authSubmit" type="submit">
+                        <span>Entrar</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+
+                <p class="auth-switch">
+                    <span id="switchPrompt">Ainda não tem uma conta?</span>
+                    <button id="authModeToggle" type="button">Criar conta</button>
+                </p>
+                <p class="privacy-note">Ao continuar, suas mensagens ficam disponíveis por até 15 dias.</p>
+            </div>
+        </section>
+
+        <section class="chat-app is-hidden" id="chatApp" aria-label="Aplicativo de mensagens">
+            <aside class="sidebar">
+                <header class="profile-panel">
+                    <button class="avatar-button" id="profileAvatarButton" type="button" aria-label="Alterar foto de perfil">
+                        <span class="avatar avatar-lg" id="profileAvatar"></span>
+                        <span class="camera-badge" aria-hidden="true">+</span>
+                    </button>
+                    <input id="profileAvatarInput" type="file" accept="image/*" hidden>
+                    <div class="profile-copy">
+                        <strong id="profileName">Usuário</strong>
+                        <span id="profileEmail">email@exemplo.com</span>
+                    </div>
+                    <button class="icon-button" id="logoutButton" type="button" aria-label="Sair da conta" title="Sair">↪</button>
+                </header>
+
+                <div class="search-box">
+                    <span aria-hidden="true">⌕</span>
+                    <input id="searchInput" type="search" placeholder="Pesquisar conversa" aria-label="Pesquisar conversa">
+                </div>
+
+                <div class="conversation-label">
+                    <span>Conversas</span>
+                    <span id="conversationCount">1</span>
+                </div>
+
+                <button class="conversation active" id="communityConversation" type="button" data-conversation-id="community" data-conversation-type="community">
+                    <span class="avatar group-avatar" aria-hidden="true">CZ</span>
+                    <span class="conversation-copy">
+                        <span class="conversation-row">
+                            <strong>Comunidade ChegouZap</strong>
+                            <time class="conversation-time" id="conversationTime">agora</time>
+                        </span>
+                        <span class="conversation-row">
+                            <span class="conversation-preview" id="conversationPreview">Converse com toda a comunidade</span>
+                            <span class="unread-badge is-hidden">0</span>
+                        </span>
+                    </span>
+                </button>
+
+                <div class="conversation-label direct-label">
+                    <span>Mensagens diretas</span>
+                    <span id="directCount">0</span>
+                </div>
+                <div class="direct-conversations" id="directConversations">
+                    <p class="conversation-empty" id="conversationEmpty">Outros usuários aparecerão aqui.</p>
+                </div>
+
+                <footer class="sidebar-footer">
+                    <span aria-hidden="true">●</span>
+                    Mensagens protegidas e removidas em 15 dias
+                </footer>
+            </aside>
+
+            <section class="chat-panel">
+                <header class="chat-header">
+                    <button class="mobile-back icon-button" id="mobileBack" type="button" aria-label="Voltar">‹</button>
+                    <span class="avatar group-avatar" id="chatAvatar">CZ</span>
+                    <div class="chat-title">
+                        <strong id="chatName">Comunidade ChegouZap</strong>
+                        <span id="presenceText">conectando…</span>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="icon-button" id="chatSearchButton" type="button" aria-label="Pesquisar mensagens" title="Pesquisar">⌕</button>
+                        <button class="icon-button" id="chatMenuButton" type="button" aria-label="Informações da conversa" title="Informações">ⓘ</button>
+                    </div>
+                </header>
+
+                <div class="chat-search is-hidden" id="chatSearch">
+                    <input id="messageSearchInput" type="search" placeholder="Buscar nas mensagens…">
+                    <button id="closeChatSearch" type="button">Fechar</button>
+                </div>
+
+                <ol class="messages" id="messages" aria-live="polite">
+                    <li class="date-chip">Hoje</li>
+                    <li class="welcome-card" id="welcomeCard">
+                        <span class="welcome-icon" aria-hidden="true">✓</span>
+                        <strong id="welcomeTitle">Bem-vindo ao ChegouZap</strong>
+                        <p id="welcomeText">Envie mensagens, fotos, vídeos e documentos. Clique nos três pontos de uma mensagem para excluí-la.</p>
+                    </li>
+                </ol>
+
+                <div class="upload-progress is-hidden" id="uploadProgress">
+                    <div class="upload-preview" id="uploadPreview" aria-label="Prévia do arquivo"></div>
+                    <div class="upload-copy">
+                        <span class="spinner" aria-hidden="true"></span>
+                        <div>
+                            <strong>Enviando arquivo…</strong>
+                            <span id="uploadFileName"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="attachment-menu is-hidden" id="attachmentMenu" role="menu">
+                    <button type="button" data-attachment="media" role="menuitem">
+                        <span class="attachment-icon media-icon" aria-hidden="true">▧</span>
+                        <span><strong>Fotos e vídeos</strong><small>JPG, PNG, MP4 e outros</small></span>
+                    </button>
+                    <button type="button" data-attachment="document" role="menuitem">
+                        <span class="attachment-icon doc-icon" aria-hidden="true">▤</span>
+                        <span><strong>Documento</strong><small>PDF, Word, Excel e outros</small></span>
+                    </button>
+                </div>
+                <input id="mediaInput" type="file" accept="image/*,video/*" hidden>
+                <input id="documentInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" hidden>
+
+                <div class="emoji-menu is-hidden" id="emojiMenu" role="dialog" aria-label="Escolher emoji">
+                    <div class="emoji-menu-heading">
+                        <strong>Emojis</strong>
+                        <span>Escolha para adicionar</span>
+                    </div>
+                    <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
+
+                <form class="composer" id="messageForm">
+                    <button class="composer-icon" id="emojiButton" type="button" aria-label="Escolher emoji" aria-expanded="false">☺</button>
+                    <button class="composer-icon attach-button" id="attachmentButton" type="button" aria-label="Anexar foto, vídeo ou documento" aria-expanded="false">＋</button>
+                    <label class="message-input-wrap" for="messageInput">
+                        <textarea id="messageInput" rows="1" maxlength="4000" placeholder="Digite uma mensagem" aria-label="Mensagem"></textarea>
+                    </label>
+                    <button class="send-button" id="sendButton" type="submit" aria-label="Enviar mensagem">
+                        <span aria-hidden="true">➤</span>
+                    </button>
+                </form>
+            </section>
+        </section>
+    </main>
+
+    <div class="modal-backdrop is-hidden" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+        <div class="modal">
+            <span class="modal-icon" aria-hidden="true">⌫</span>
+            <h2 id="deleteTitle">Excluir mensagem?</h2>
+            <p>Escolha quem deixará de ver esta mensagem.</p>
+            <div class="modal-actions">
+                <button id="deleteForMeButton" type="button">Excluir para mim</button>
+                <button class="danger-button is-hidden" id="deleteForEveryoneButton" type="button">Excluir para todos</button>
+                <button class="cancel-button" id="cancelDeleteButton" type="button">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast is-hidden" id="toast" role="status"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

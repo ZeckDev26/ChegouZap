@@ -1,0 +1,15 @@
+{
+  "name": "chegouzap",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend run dev",
+    "check": "npm --prefix backend run check",
+    "postinstall": "npm --prefix backend install"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mongodb": "^7.5.0",
+    "mongoose": "^9.8.0"
+  }
+}
