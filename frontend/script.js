@@ -438,6 +438,10 @@ function connectSocket() {
 
     state.socket.on('chat message', (message) => {
         updateConversationPreview(message);
+        
+        // --- AQUI ENTRA A NOTIFICAÇÃO ---
+        showSystemNotification(message);
+
         if (message.conversaId !== state.activeConversation.id) {
             incrementUnread(message.conversaId);
             return;
@@ -510,6 +514,83 @@ function createAttachment(attachment) {
     const url = protectedFileUrl(attachment);
     if (!url) return mediaErrorCard('Arquivo indisponível');
 
+    // --- PLAYER DE ÁUDIO ---
+    if (attachment.categoria === 'audio' || attachment.tipo?.startsWith('audio/')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'audio-attachment';
+
+        const playButton = document.createElement('button');
+        playButton.className = 'audio-play-button';
+        playButton.type = 'button';
+        playButton.innerHTML = '▶'; // Ícone de Play
+
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'audio-progress-container';
+
+        const progressBar = document.createElement('input');
+        progressBar.type = 'range';
+        progressBar.className = 'audio-progress';
+        progressBar.value = 0;
+        progressBar.min = 0;
+        progressBar.max = 100;
+
+        const timeDisplay = document.createElement('span');
+        timeDisplay.className = 'audio-time';
+        timeDisplay.textContent = '0:00';
+
+        const audio = document.createElement('audio');
+        audio.src = url;
+        audio.preload = 'metadata';
+        audio.className = 'is-hidden';
+
+        progressContainer.append(progressBar, timeDisplay);
+        wrapper.append(playButton, progressContainer, audio);
+
+        // Lógica de Play/Pause e controle de tempo
+        let isPlaying = false;
+
+        audio.addEventListener('loadedmetadata', () => {
+            const mins = Math.floor(audio.duration / 60) || 0;
+            const secs = Math.floor(audio.duration % 60).toString().padStart(2, '0') || '00';
+            timeDisplay.textContent = `${mins}:${secs}`;
+            progressBar.max = audio.duration;
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            progressBar.value = audio.currentTime;
+            const mins = Math.floor(audio.currentTime / 60) || 0;
+            const secs = Math.floor(audio.currentTime % 60).toString().padStart(2, '0') || '00';
+            timeDisplay.textContent = `${mins}:${secs}`;
+        });
+
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            playButton.innerHTML = '▶';
+            progressBar.value = 0;
+            const mins = Math.floor(audio.duration / 60) || 0;
+            const secs = Math.floor(audio.duration % 60).toString().padStart(2, '0') || '00';
+            timeDisplay.textContent = `${mins}:${secs}`;
+        });
+
+        playButton.addEventListener('click', () => {
+            if (isPlaying) {
+                audio.pause();
+                playButton.innerHTML = '▶';
+            } else {
+                audio.play();
+                playButton.innerHTML = '⏸'; // Ícone de Pause
+            }
+            isPlaying = !isPlaying;
+        });
+
+        progressBar.addEventListener('input', () => {
+            audio.currentTime = progressBar.value;
+        });
+
+        return wrapper;
+    }
+
+    // --- IMAGEM ---
     if (attachment.categoria === 'imagem' || attachment.tipo?.startsWith('image/')) {
         const link = document.createElement('a');
         link.href = url;
@@ -527,6 +608,7 @@ function createAttachment(attachment) {
         return link;
     }
 
+    // --- VÍDEO ---
     if (attachment.categoria === 'video' || attachment.tipo?.startsWith('video/')) {
         const wrapper = document.createElement('div');
         wrapper.className = 'video-wrap';
@@ -543,6 +625,7 @@ function createAttachment(attachment) {
         return wrapper;
     }
 
+    // --- DOCUMENTOS GERAIS ---
     const link = document.createElement('a');
     link.href = url;
     link.target = '_blank';
@@ -895,3 +978,211 @@ async function initialize() {
 }
 
 initialize();
+
+// --- SISTEMA DE GRAVAÇÃO DE ÁUDIO ---
+
+let mediaRecorder;
+let audioChunks = [];
+let recordTimerInterval;
+let recordStartTime;
+
+const micButton = document.getElementById('micButton');
+const recordingUI = document.getElementById('recordingUI');
+const recordingTimer = document.getElementById('recordingTimer');
+const cancelRecord = document.getElementById('cancelRecord');
+const sendRecord = document.getElementById('sendRecord');
+const messageInputWrap = document.getElementById('messageInputWrap');
+const sendButton = document.getElementById('sendButton');
+
+// Iniciar Gravação
+micButton.addEventListener('click', async () => {
+    try {
+        // Pede permissão para usar o microfone
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.addEventListener('dataavailable', event => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+        });
+
+        mediaRecorder.start();
+
+        // Altera a interface: Esconde o texto e mostra a gravação
+        micButton.classList.add('is-hidden');
+        messageInputWrap.classList.add('is-hidden');
+        sendButton.classList.add('is-hidden');
+        recordingUI.classList.remove('is-hidden');
+
+        // Inicia o cronômetro
+        recordStartTime = Date.now();
+        recordingTimer.textContent = '00:00';
+        recordTimerInterval = setInterval(() => {
+            const diff = Math.floor((Date.now() - recordStartTime) / 1000);
+            const minutes = String(Math.floor(diff / 60)).padStart(2, '0');
+            const seconds = String(diff % 60).padStart(2, '0');
+            recordingTimer.textContent = `${minutes}:${seconds}`;
+        }, 1000);
+
+    } catch (err) {
+        showToast('Permissão de microfone negada ou indisponível.', 'error');
+    }
+});
+
+// Função para resetar a interface e parar o microfone
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Desliga o led do mic
+    }
+    clearInterval(recordTimerInterval);
+    recordingUI.classList.add('is-hidden');
+    micButton.classList.remove('is-hidden');
+    messageInputWrap.classList.remove('is-hidden');
+    sendButton.classList.remove('is-hidden');
+}
+
+// Cancelar Gravação
+cancelRecord.addEventListener('click', () => {
+    stopRecording();
+    audioChunks = []; // Descarta o áudio
+});
+
+// Enviar Gravação
+sendRecord.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        // Quando a gravação parar totalmente, gera o arquivo e envia
+        mediaRecorder.addEventListener('stop', () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            
+            // Transforma o Blob em um File simulando um anexo padrão do sistema
+            const audioFile = new File([audioBlob], `audio_${Date.now()}.webm`, { 
+                type: 'audio/webm' 
+            });
+            
+            // Usa a sua função de upload existente!
+            uploadFile(audioFile);
+        }, { once: true });
+        
+        stopRecording();
+    }
+});
+
+// Registra o Service Worker para transformar em PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+                console.log('Service Worker registrado com sucesso!', registration.scope);
+            })
+            .catch((error) => {
+                console.error('Falha ao registrar o Service Worker:', error);
+            });
+    });
+}
+
+// ==========================================
+// --- SISTEMA DE PWA (INSTALAÇÃO) ---
+// ==========================================
+let deferredPrompt;
+const installPopup = document.getElementById('installPopup');
+const installAppButton = document.getElementById('installAppButton');
+const closeInstallPopupButton = document.getElementById('closeInstallPopupButton');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // Impede que o aviso padrão do navegador apareça
+    deferredPrompt = e; // Guarda o evento para usarmos no botão
+    
+    // Só mostra o popup se o usuário estiver logado e se o HTML do popup existir
+    if (state.token && installPopup) {
+        installPopup.classList.remove('is-hidden');
+    }
+});
+
+if (installAppButton) {
+    installAppButton.addEventListener('click', async () => {
+        installPopup.classList.add('is-hidden');
+        if (deferredPrompt) {
+            deferredPrompt.prompt(); // Mostra a tela nativa de instalação do celular/PC
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('Aplicativo instalado com sucesso!');
+            }
+            deferredPrompt = null;
+        }
+    });
+}
+
+if (closeInstallPopupButton) {
+    closeInstallPopupButton.addEventListener('click', () => {
+        installPopup.classList.add('is-hidden');
+    });
+}
+
+
+// ==========================================
+// --- SISTEMA DE NOTIFICAÇÕES PUSH ---
+// ==========================================
+const notificationPopup = document.getElementById('notificationPopup');
+const enableNotifButton = document.getElementById('enableNotifButton');
+const closeNotifPopupButton = document.getElementById('closeNotifPopupButton');
+
+function checkNotificationPermission() {
+    if (!('Notification' in window)) return;
+    
+    // Se ainda não foi perguntado ('default') e o usuário está logado
+    if (Notification.permission === 'default' && state.token && notificationPopup) {
+        // Aguarda 3 segundos após o carregamento para não ser invasivo
+        setTimeout(() => {
+            notificationPopup.classList.remove('is-hidden');
+        }, 3000);
+    }
+}
+
+if (enableNotifButton) {
+    enableNotifButton.addEventListener('click', () => {
+        notificationPopup.classList.add('is-hidden');
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                showToast('Notificações ativadas!', 'success');
+            }
+        });
+    });
+}
+
+if (closeNotifPopupButton) {
+    closeNotifPopupButton.addEventListener('click', () => {
+        notificationPopup.classList.add('is-hidden');
+    });
+}
+
+// Executa a checagem sempre que a página carregar
+window.addEventListener('load', checkNotificationPermission);
+
+// Função que cria a notificação visual do sistema operacional
+function showSystemNotification(message) {
+    // Se não tem permissão ou o navegador não suporta, sai da função
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    
+    // Não notifica se fui eu que mandei a mensagem
+    if (message.remetente?.id === state.user?.id) return;
+    
+    // Só avisa se você estiver em outra aba do navegador, com a tela minimizada, 
+    // ou se a mensagem chegou em uma conversa diferente da que está aberta.
+    const isDifferentChat = message.conversaId !== state.activeConversation.id;
+    const isPageHidden = document.hidden;
+
+    if (isPageHidden || isDifferentChat) {
+        const title = message.tipoConversa === 'community' 
+            ? `Comunidade: ${message.remetente?.nome || 'Novo usuário'}` 
+            : message.remetente?.nome;
+        
+        let bodyText = message.texto;
+        if (!bodyText && message.anexo) bodyText = '📎 Arquivo de mídia';
+        
+        new Notification(title, {
+            body: bodyText,
+            icon: 'icon-192.svg' // Usa o ícone do projeto
+        });
+    }
+}

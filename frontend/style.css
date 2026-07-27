@@ -1542,3 +1542,71 @@ a:focus-visible {
         grid-template-columns: repeat(7, 1fr);
     }
 }
+/* --- Estilos do Player de Áudio --- */
+.audio-attachment {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 5px 10px;
+    min-width: 240px;
+}
+
+.audio-play-button {
+    background: transparent;
+    color: #a4b0b5;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.1s;
+}
+
+.audio-play-button:active {
+    transform: scale(0.9);
+}
+
+.audio-progress-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.audio-progress {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #00a884; /* Verde clássico do WhatsApp */
+    height: 4px;
+    background: #475a64;
+    border-radius: 5px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+/* Bolinha do slider de áudio */
+.audio-progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #00a884;
+    cursor: pointer;
+}
+
+.audio-time {
+    font-size: 11px;
+    color: #8696a0;
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+/* Diferencia as cores caso a mensagem seja sua (fundo verde claro) ou da outra pessoa */
+.message.mine .audio-progress {
+    accent-color: #0b9e86;
+}
+.message.mine .audio-progress::-webkit-slider-thumb {
+    background: #0b9e86;
+}

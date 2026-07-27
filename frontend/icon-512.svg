@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Balão de fundo (Verde claro) -->
+  <path d="M 196 76 H 316 A 120 120 0 0 1 436 196 V 316 A 120 120 0 0 1 316 436 H 106 A 30 30 0 0 1 76 406 V 196 A 120 120 0 0 1 196 76 Z" fill="#25d366" />
+  
+  <!-- Letra C (Branca) -->
+  <text x="256" y="335" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="220" fill="#ffffff" text-anchor="middle">C</text>
+</svg>

@@ -6,7 +6,19 @@
     <meta name="theme-color" content="#075e54">
     <meta name="description" content="ChegouZap — conversas rápidas, simples e seguras.">
     <title>ChegouZap</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg?v=3">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <link rel="stylesheet" href="style.css?v=3">
+    
+    <!-- Estilo para a bolinha vermelha piscando na gravação -->
+    <style>
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <main class="app-shell">
@@ -173,16 +185,32 @@
                     <div class="emoji-grid" id="emojiGrid"></div>
                 </div>
 
+                <!-- AQUI ESTÁ O NOVO FORMULÁRIO COM O MICROFONE (Colocado no local correto) -->
                 <form class="composer" id="messageForm">
                     <button class="composer-icon" id="emojiButton" type="button" aria-label="Escolher emoji" aria-expanded="false">☺</button>
                     <button class="composer-icon attach-button" id="attachmentButton" type="button" aria-label="Anexar foto, vídeo ou documento" aria-expanded="false">＋</button>
-                    <label class="message-input-wrap" for="messageInput">
+                    
+                    <!-- Interface de Gravação (oculta por padrão) -->
+                    <div class="recording-ui is-hidden" id="recordingUI" style="flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 10px;">
+                        <span style="color: #ff3b30; animation: pulse 1.5s infinite;">🔴 Gravando...</span>
+                        <span id="recordingTimer" style="font-weight: bold; margin: 0 10px;">00:00</span>
+                        <button id="cancelRecord" type="button" style="color: #d32f2f; border: none; background: none; cursor: pointer; font-weight: 500;">Cancelar</button>
+                        <button id="sendRecord" type="button" style="color: #075e54; border: none; background: none; cursor: pointer; font-weight: bold;">Enviar</button>
+                    </div>
+
+                    <label class="message-input-wrap" id="messageInputWrap" for="messageInput">
                         <textarea id="messageInput" rows="1" maxlength="4000" placeholder="Digite uma mensagem" aria-label="Mensagem"></textarea>
                     </label>
+                    
+                    <!-- Botão de Microfone -->
+                    <button class="composer-icon" id="micButton" type="button" aria-label="Gravar áudio">🎙️</button>
+
                     <button class="send-button" id="sendButton" type="submit" aria-label="Enviar mensagem">
                         <span aria-hidden="true">➤</span>
                     </button>
                 </form>
+                <!-- FIM DO FORMULÁRIO -->
+
             </section>
         </section>
     </main>
@@ -202,7 +230,34 @@
 
     <div class="toast is-hidden" id="toast" role="status"></div>
 
+    <!-- Modal de Instalação do App (PWA) -->
+    <div class="modal-backdrop is-hidden" id="installPopup" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+        <div class="modal">
+            <span class="modal-icon" aria-hidden="true">📱</span>
+            <h2 id="installTitle">Instalar ChegouZap</h2>
+            <p>Baixe o aplicativo para ter acesso rápido na sua tela inicial e uma experiência mais fluida.</p>
+            <div class="modal-actions">
+                <button class="primary-button" id="installAppButton" type="button">Instalar Agora</button>
+                <button class="cancel-button" id="closeInstallPopupButton" type="button">Agora não</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Solicitação de Notificações -->
+    <div class="modal-backdrop is-hidden" id="notificationPopup" role="dialog" aria-modal="true" aria-labelledby="notifTitle">
+        <div class="modal">
+            <span class="modal-icon" aria-hidden="true">🔔</span>
+            <h2 id="notifTitle">Ativar Notificações?</h2>
+            <p>Saiba imediatamente quando alguém enviar uma mensagem para você.</p>
+            <div class="modal-actions">
+                <button class="primary-button" id="enableNotifButton" type="button">Ativar</button>
+                <button class="cancel-button" id="closeNotifPopupButton" type="button">Depois</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=3"></script>
+
 </body>
-</html>
+</html> 
