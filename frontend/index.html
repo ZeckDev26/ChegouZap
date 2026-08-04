@@ -5,11 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#075e54">
     <meta name="description" content="ChegouZap — conversas rápidas, simples e seguras.">
+    <meta property="og:title" content="ChegouZap — converse sem complicação">
+    <meta property="og:description" content="Mensagens em tempo real, grupos privados e compartilhamento seguro de arquivos.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ChegouZap — converse sem complicação">
+    <meta name="twitter:description" content="Mensagens em tempo real, grupos privados e compartilhamento seguro de arquivos.">
+    <meta name="twitter:image" content="/og.png">
     <title>ChegouZap</title>
     <link rel="icon" type="image/svg+xml" href="icon-192.svg?v=3">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.svg">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=5">
     
     <!-- Estilo para a bolinha vermelha piscando na gravação -->
     <style>
@@ -82,22 +90,38 @@
                     <input id="profileAvatarInput" type="file" accept="image/*" hidden>
                     <div class="profile-copy">
                         <strong id="profileName">Usuário</strong>
-                        <span id="profileEmail">email@exemplo.com</span>
+                        <span>Sua conta</span>
                     </div>
+                    <button class="icon-button" id="settingsButton" type="button" aria-label="Privacidade e configurações" title="Configurações">⚙</button>
                     <button class="icon-button" id="logoutButton" type="button" aria-label="Sair da conta" title="Sair">↪</button>
                 </header>
 
                 <div class="search-box">
                     <span aria-hidden="true">⌕</span>
-                    <input id="searchInput" type="search" placeholder="Pesquisar conversa" aria-label="Pesquisar conversa">
+                    <input id="searchInput" type="search" placeholder="Buscar pessoa por nome ou e-mail" aria-label="Buscar pessoa por nome ou e-mail" autocomplete="off">
+                </div>
+                <div class="user-search-results is-hidden" id="userSearchResults" aria-live="polite"></div>
+                <button class="new-group-button" id="newGroupButton" type="button">
+                    <span aria-hidden="true">＋</span>
+                    Criar novo grupo
+                </button>
+
+                <div class="chat-filters" id="chatFilters" aria-label="Filtrar conversas">
+                    <button class="active" type="button" data-filter="all">Todas</button>
+                    <button type="button" data-filter="unread">Não lidas</button>
+                    <button type="button" data-filter="direct">Diretas</button>
+                    <button type="button" data-filter="groups">Grupos</button>
+                    <button type="button" data-filter="requests">Solicitações</button>
+                    <button type="button" data-filter="archived">Arquivadas</button>
                 </div>
 
-                <div class="conversation-label">
-                    <span>Conversas</span>
-                    <span id="conversationCount">1</span>
-                </div>
+                <div class="conversation-scroll">
+                    <div class="conversation-label">
+                        <span>Conversas</span>
+                        <span id="conversationCount">1</span>
+                    </div>
 
-                <button class="conversation active" id="communityConversation" type="button" data-conversation-id="community" data-conversation-type="community">
+                    <button class="conversation active" id="communityConversation" type="button" data-conversation-id="community" data-conversation-type="community">
                     <span class="avatar group-avatar" aria-hidden="true">CZ</span>
                     <span class="conversation-copy">
                         <span class="conversation-row">
@@ -109,14 +133,23 @@
                             <span class="unread-badge is-hidden">0</span>
                         </span>
                     </span>
-                </button>
+                    </button>
 
-                <div class="conversation-label direct-label">
-                    <span>Mensagens diretas</span>
-                    <span id="directCount">0</span>
-                </div>
-                <div class="direct-conversations" id="directConversations">
-                    <p class="conversation-empty" id="conversationEmpty">Outros usuários aparecerão aqui.</p>
+                    <div class="conversation-label direct-label">
+                        <span>Mensagens diretas</span>
+                        <span id="directCount">0</span>
+                    </div>
+                    <div class="direct-conversations" id="directConversations">
+                        <p class="conversation-empty" id="conversationEmpty">Pesquise uma pessoa para iniciar uma conversa.</p>
+                    </div>
+
+                    <div class="conversation-label group-label">
+                        <span>Grupos fechados</span>
+                        <span id="groupCount">0</span>
+                    </div>
+                    <div class="group-conversations" id="groupConversations">
+                        <p class="conversation-empty" id="groupEmpty">Você ainda não participa de grupos.</p>
+                    </div>
                 </div>
 
                 <footer class="sidebar-footer">
@@ -142,6 +175,19 @@
                 <div class="chat-search is-hidden" id="chatSearch">
                     <input id="messageSearchInput" type="search" placeholder="Buscar nas mensagens…">
                     <button id="closeChatSearch" type="button">Fechar</button>
+                </div>
+
+                <button class="pinned-message-banner is-hidden" id="pinnedMessageBanner" type="button">
+                    <span aria-hidden="true">📌</span>
+                    <span><strong>Mensagem fixada</strong><small id="pinnedMessageText">Toque para localizar</small></span>
+                </button>
+
+                <div class="request-banner is-hidden" id="requestBanner">
+                    <span>Esta pessoa quer iniciar uma conversa.</span>
+                    <div>
+                        <button id="acceptRequestButton" type="button">Aceitar</button>
+                        <button id="blockRequestButton" type="button">Bloquear</button>
+                    </div>
                 </div>
 
                 <ol class="messages" id="messages" aria-live="polite">
@@ -183,6 +229,11 @@
                         <span>Escolha para adicionar</span>
                     </div>
                     <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
+
+                <div class="reply-composer-bar is-hidden" id="replyComposerBar">
+                    <span><strong id="replyComposerTitle">Respondendo</strong><small id="replyComposerText"></small></span>
+                    <button id="cancelReplyButton" type="button" aria-label="Cancelar resposta">×</button>
                 </div>
 
                 <!-- AQUI ESTÁ O NOVO FORMULÁRIO COM O MICROFONE (Colocado no local correto) -->
@@ -228,6 +279,93 @@
         </div>
     </div>
 
+    <div class="modal-backdrop is-hidden" id="messageActionsModal" role="dialog" aria-modal="true" aria-labelledby="messageActionsTitle">
+        <div class="modal action-modal">
+            <span class="modal-icon" aria-hidden="true">💬</span>
+            <h2 id="messageActionsTitle">Ações da mensagem</h2>
+            <div class="quick-reactions" id="quickReactions" aria-label="Reações rápidas"></div>
+            <div class="modal-actions">
+                <button id="replyMessageButton" type="button">↩ Responder</button>
+                <button id="editMessageButton" type="button">✎ Editar</button>
+                <button id="pinMessageButton" type="button">📌 Fixar no topo</button>
+                <button id="openDeleteButton" type="button">⌫ Excluir</button>
+                <button class="cancel-button" id="cancelMessageActionsButton" type="button">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop is-hidden" id="chatInfoModal" role="dialog" aria-modal="true" aria-labelledby="chatInfoTitle">
+        <div class="modal info-modal">
+            <span class="avatar avatar-lg group-avatar" id="infoAvatar">CZ</span>
+            <h2 id="chatInfoTitle">Informações da conversa</h2>
+            <p id="chatInfoSubtitle"></p>
+            <div class="info-actions">
+                <button id="togglePinConversationButton" type="button">📌 Fixar conversa</button>
+                <button id="toggleMuteButton" type="button">🔔 Silenciar</button>
+                <button id="toggleArchiveButton" type="button">🗄 Arquivar</button>
+                <button id="openMediaButton" type="button">▧ Mídias e documentos</button>
+            </div>
+            <section class="group-admin-panel is-hidden" id="groupAdminPanel">
+                <label for="editGroupNameInput">Nome do grupo</label>
+                <div class="inline-field"><input id="editGroupNameInput" maxlength="60"><button id="saveGroupNameButton" type="button">Salvar</button></div>
+                <label class="file-action" for="groupAvatarInput">Alterar foto do grupo</label>
+                <input id="groupAvatarInput" type="file" accept="image/*" hidden>
+                <button id="inviteLinkButton" type="button">🔗 Gerar novo link de convite</button>
+                <div class="member-management" id="memberManagement"></div>
+                <button class="danger-link" id="leaveGroupButton" type="button">Sair do grupo</button>
+            </section>
+            <section class="private-safety-panel is-hidden" id="privateSafetyPanel">
+                <button id="blockUserButton" type="button">Bloquear usuário</button>
+                <button id="reportUserButton" type="button">Denunciar conversa</button>
+            </section>
+            <button class="cancel-button standalone-cancel" id="closeChatInfoButton" type="button">Fechar</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop is-hidden" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+        <div class="modal settings-modal">
+            <span class="modal-icon" aria-hidden="true">⚙</span>
+            <h2 id="privacyTitle">Privacidade</h2>
+            <p>Escolha como outras pessoas podem encontrar e visualizar você.</p>
+            <label class="setting-row"><span><strong>Buscar pelo e-mail</strong><small>Permitir que encontrem sua conta pelo endereço completo</small></span><input id="allowEmailSearchToggle" type="checkbox"></label>
+            <label class="setting-row"><span><strong>Mostrar quando estiver online</strong><small>Exibir seu status nas conversas</small></span><input id="showOnlineToggle" type="checkbox"></label>
+            <label class="setting-row"><span><strong>Confirmação de leitura</strong><small>Enviar o indicador de mensagem lida</small></span><input id="readReceiptsToggle" type="checkbox"></label>
+            <div class="modal-actions"><button class="primary-button" id="savePrivacyButton" type="button">Salvar</button><button class="cancel-button" id="closePrivacyButton" type="button">Cancelar</button></div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop is-hidden" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+        <div class="modal media-modal">
+            <h2 id="mediaTitle">Mídias e documentos</h2>
+            <div class="media-gallery" id="mediaGallery"></div>
+            <button class="cancel-button standalone-cancel" id="closeMediaButton" type="button">Fechar</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop is-hidden" id="groupModal" role="dialog" aria-modal="true" aria-labelledby="groupModalTitle">
+        <div class="modal group-modal">
+            <span class="modal-icon" aria-hidden="true">👥</span>
+            <h2 id="groupModalTitle">Novo grupo fechado</h2>
+            <p id="groupModalDescription">Somente as pessoas adicionadas poderão ver e enviar mensagens.</p>
+
+            <div class="form-field" id="groupNameField">
+                <label for="groupNameInput">Nome do grupo</label>
+                <input id="groupNameInput" type="text" maxlength="60" placeholder="Ex.: Família ou Equipe">
+            </div>
+            <div class="form-field">
+                <label for="groupUserSearch">Adicionar pessoas</label>
+                <input id="groupUserSearch" type="search" placeholder="Buscar por nome ou e-mail" autocomplete="off">
+            </div>
+            <div class="group-search-results" id="groupSearchResults"></div>
+            <div class="selected-members" id="selectedMembers"></div>
+            <p class="form-error group-error" id="groupError"></p>
+            <div class="modal-actions">
+                <button class="primary-button" id="saveGroupButton" type="button">Criar grupo</button>
+                <button class="cancel-button" id="cancelGroupButton" type="button">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast is-hidden" id="toast" role="status"></div>
 
     <!-- Modal de Instalação do App (PWA) -->
@@ -257,7 +395,7 @@
     </div>
     
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=3"></script>
+    <script src="script.js?v=5"></script>
 
 </body>
 </html> 

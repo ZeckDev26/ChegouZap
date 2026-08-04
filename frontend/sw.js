@@ -1,9 +1,8 @@
-const CACHE_NAME = 'chegouzap-v1';
+const CACHE_NAME = 'chegouzap-v5';
 const ASSETS_TO_CACHE = [
-  '/',
   '/index.html',
-  '/style.css',
-  '/script.js',
+  '/style.css?v=5',
+  '/script.js?v=5',
   '/manifest.json'
 ];
 
@@ -20,15 +19,36 @@ self.addEventListener('install', (event) => {
 
 // 🔥 NOVO: Faz o SW assumir o controle de todas as abas/apps abertos instantaneamente
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys.filter((key) => key.startsWith('chegouzap-') && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => clients.claim())
+  );
 });
 
-// Intercepta as requisições (Cache First)
+// Usa a rede primeiro para que versões publicadas apareçam sem limpar o navegador.
 self.addEventListener('fetch', (event) => {
+  const requestUrl = new URL(event.request.url);
+  if (event.request.method !== 'GET'
+      || requestUrl.origin !== self.location.origin
+      || requestUrl.pathname.startsWith('/api/')
+      || requestUrl.pathname.startsWith('/socket.io/')) {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request)
+        .then((cached) => cached
+          || (event.request.mode === 'navigate' ? caches.match('/index.html') : Response.error())))
   );
 });
 
@@ -69,7 +89,8 @@ self.addEventListener('notificationclick', (event) => {
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let i = 0; i < windowClients.length; i++) {
                 const client = windowClients[i];
-                if (client.url === self.registration.scope && 'focus' in client) {
+                if ('focus' in client) {
+                    if ('navigate' in client) return client.navigate(event.notification.data.url).then(() => client.focus());
                     return client.focus();
                 }
             }
