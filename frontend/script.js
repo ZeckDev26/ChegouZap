@@ -45,6 +45,9 @@ const state = {
 const elements = {
     authScreen: document.getElementById('authScreen'),
     chatApp: document.getElementById('chatApp'),
+    sidebar: document.querySelector('.sidebar'),
+    chatPanel: document.querySelector('.chat-panel'),
+    conversationScroll: document.querySelector('.conversation-scroll'),
     authForm: document.getElementById('authForm'),
     authTitle: document.getElementById('authTitle'),
     authSubtitle: document.getElementById('authSubtitle'),
@@ -175,6 +178,25 @@ function initials(name = '') {
         .join('')
         .toUpperCase() || 'CZ';
 }
+
+function enableReliableWheel(container, scroller) {
+    if (!container || !scroller) return;
+    container.addEventListener('wheel', (event) => {
+        if (event.ctrlKey || !event.deltaY || event.target.closest('input[type="range"]')) return;
+        if (scroller.scrollHeight <= scroller.clientHeight) return;
+
+        const multiplier = event.deltaMode === 1
+            ? 18
+            : event.deltaMode === 2
+                ? scroller.clientHeight
+                : 1;
+        event.preventDefault();
+        scroller.scrollTop += event.deltaY * multiplier;
+    }, { passive: false });
+}
+
+enableReliableWheel(elements.chatPanel, elements.messages);
+enableReliableWheel(elements.sidebar, elements.conversationScroll);
 
 function inferR2Key(value = '') {
     const match = decodeURIComponent(String(value || '')).match(/(?:^|\/)((?:mensagens|avatares)\/[^?#]+)/);
